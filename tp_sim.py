@@ -14,6 +14,21 @@ class VoteResult(Enum):
     def __bool__(self):
         return (self == VoteResult.TRUE_POSITIVE or self == VoteResult.FALSE_POSITIVE)
 
+    @staticmethod
+    def get_result(is_present: bool, is_detected: bool) -> 'VoteResult':
+        if not is_present and not is_detected:
+            res = VoteResult.TRUE_NEGATIVE
+        elif is_present and is_detected:
+            res = VoteResult.TRUE_POSITIVE
+        elif not is_present and is_detected:
+            res = VoteResult.FALSE_POSITIVE
+        elif is_present and not is_detected:
+            res = VoteResult.FALSE_NEGATIVE
+        return res
+
+    def is_correct(self)->bool:
+        return (self == VoteResult.TRUE_NEGATIVE or self == VoteResult.TRUE_POSITIVE)
+
 class RandomSubsystemImplementation:
     def __init__(self, fault_categories: int, miss_likelihood_range: Tuple[float, float]):
         aint = ord('A')
@@ -25,16 +40,11 @@ class RandomSubsystemImplementation:
         single_fault_present = False # only allow one fault per vote
         for fault_type, is_present in faults.items():
             assert fault_type in self.category_probs, f"Unknown fault type category {fault_type}, subsystem only knows of {self.category_probs.keys()}"
-            detect = random.uniform(0.0,1.0) > self.category_probs[fault_type]
-            if not is_present and (not detect or single_fault_present):
-                res = VoteResult.TRUE_NEGATIVE
-            elif is_present and (detect or single_fault_present):
-                res = VoteResult.TRUE_POSITIVE
-            elif not is_present and detect:
-                res = VoteResult.FALSE_POSITIVE
-                single_fault_present = only_single_fault
-            elif is_present and not detect:
-                res = VoteResult.FALSE_NEGATIVE
+            px = random.uniform(0.0,1.0)
+            pw = self.category_probs[fault_type]
+            detect = px > (1 - pw if not is_present else pw)
+            res = VoteResult.get_result(is_present, detect if not single_fault_present else is_present)
+            if not res.is_correct():
                 single_fault_present = only_single_fault
             
             retdict[fault_type] = res
@@ -66,10 +76,10 @@ class RandomSystemImplementation:
 
 if __name__ == "__main__":
     random.seed(42)
-    rsi = RandomSystemImplementation(3, 5, [(0.4, 0.5)] * 3, False)
+    rsi = RandomSystemImplementation(3, 5, [(0.5, 0.5)] * 3, False)
     for i in range(100):
-        fc = {'A': True, 'B': False, 'C' : False, 'D': False, 'E': False}
+        fc = {'A': False, 'B': False, 'C' : False, 'D': False, 'E': False}
         fault_present = True in fc.values()
         fault_detected = rsi.vote(fc)[0]
-        correct = (fault_present and fault_detected) or (not fault_present and not fault_detected)
+        correct = VoteResult.get_result(fault_present, fault_detected).is_correct()
         print(colored(f"{i}: Fault {'' if fault_present else 'not '}present and {'' if fault_detected else 'not '}detected", 'green' if correct else 'red'))

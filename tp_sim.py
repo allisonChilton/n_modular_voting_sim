@@ -101,6 +101,7 @@ class RandomSubsystemImplementation:
 class RandomSystemImplementation:
     def __init__(self, subsystems: int, fault_categories: int, miss_likelihood_ranges: List[FaultDetectionRange], alike: bool, weights = None):
         self.weights = weights if weights is not None else [1] * subsystems
+        self.fault_categories = fault_categories
         if not alike:
             self.subsystems = [RandomSubsystemImplementation(fault_categories, miss_likelihood_ranges[i]) for i in range(subsystems)]
         else:
@@ -126,6 +127,17 @@ class RandomSystemImplementation:
         result = VoteResult.get_result(fault_present, fault_detected)
         return result
 
+    def collect_trials(self, trials: int, num_faults: int) -> pandas.DataFrame:
+        results = []
+        for i in range(trials):
+            fc = get_fc(self.fault_categories, num_faults)
+            res = self.run_trial(fc)
+            rd = {'result': res.name, 'correct': res.is_correct(), 'detected': res.fault_detected, 'present': res.fault_present}
+            results.append(rd)
+
+        return pandas.DataFrame(results)
+
+
 def get_fc(fault_categories: int, faults: int) -> Dict[str, bool]:
         aint = ord('A')
         assert 0 < fault_categories <= 26
@@ -142,7 +154,6 @@ def get_fc(fault_categories: int, faults: int) -> Dict[str, bool]:
 if __name__ == "__main__":
     random.seed(42)
     rsi = RandomSystemImplementation(3, 5, [FaultDetectionRange((0.1, 0.3), (0.01, 0.05))] * 3, False)
-    for i in range(100):
-        fc = get_fc(5, 0)
-        res = rsi.run_trial(fc)
-        print(res.res_string())
+    res = rsi.collect_trials(100, 1)
+    print(res)
+    #print(res.res_string())

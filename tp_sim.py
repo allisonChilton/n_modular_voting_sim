@@ -99,13 +99,13 @@ class RandomSubsystemImplementation:
             
 
 class RandomSystemImplementation:
-    def __init__(self, subsystems: int, fault_categories: int, miss_likelihood_ranges: List[FaultDetectionRange], alike: bool, weights = None):
+    def __init__(self, subsystems: int, fault_categories: int, likelihood_ranges: List[FaultDetectionRange], alike: bool, weights = None):
         self.weights = weights if weights is not None else [1] * subsystems
         self.fault_categories = fault_categories
         if not alike:
-            self.subsystems = [RandomSubsystemImplementation(fault_categories, miss_likelihood_ranges[i]) for i in range(subsystems)]
+            self.subsystems = [RandomSubsystemImplementation(fault_categories, likelihood_ranges[i]) for i in range(subsystems)]
         else:
-            self.subsystems = subsystems * [RandomSubsystemImplementation(fault_categories, miss_likelihood_ranges[0])]
+            self.subsystems = subsystems * [RandomSubsystemImplementation(fault_categories, likelihood_ranges[0])]
     
     def vote(self, faults: Dict[str, bool], only_single_fault: bool = True) -> Tuple[bool, List[Dict[str, VoteResult]]]:
         votes = [subsystem.vote(faults, only_single_fault) for subsystem in self.subsystems]
@@ -123,7 +123,7 @@ class RandomSystemImplementation:
 
     def run_trial(self, fc: Dict[str, bool]) -> VoteResult:
         fault_present = True in fc.values()
-        fault_detected = rsi.vote(fc)[0]
+        fault_detected = self.vote(fc)[0]
         result = VoteResult.get_result(fault_present, fault_detected)
         return result
 
@@ -150,10 +150,64 @@ def get_fc(fault_categories: int, faults: int) -> Dict[str, bool]:
             category_probs[rk] = True
         return category_probs
 
+class Scenarios:
+    def __init__(self, trials, faults, fdr, fdr_low, subsystems, fault_categories):
+        self.trials = trials
+        self.faults = faults
+        self.fdr = fdr
+        self.fdr_low = fdr_low
+        self.subsystems = subsystems
+        self.fault_categories = fault_categories
+
+    def unweighted_disalike_subsystems(self):
+        """Test a set of equally weighted disalike subsystems with a given subsystem count and fault category count"""
+        rsi = RandomSystemImplementation(self.subsystems, self.fault_categories, [self.fdr] * self.subsystems, False)
+        res = rsi.collect_trials(self.trials, self.faults)
+        res['trial'] = "Unweighted_Disalike"
+        return res
+
+    def weighted_disalike_subsystems(self, good_weight: float):
+        """Test a set of weighted disalike subsystems with a given subsystem count and fault category count,
+        with a weighted probability favoring a system with better design tolerances, complemented by weaker systems with more lax tolerances"""
+        other_weights = (1-good_weight) / (self.subsystems - 1)
+        weights = [good_weight] + [other_weights] * (self.subsystems - 1)
+        rsi = RandomSystemImplementation(self.subsystems, self.fault_categories, [self.fdr] * self.subsystems, False, weights)
+        res = rsi.collect_trials(self.trials, self.faults)
+        res['trial'] = "Weighted_Disalike"
+        return res
+
+    def unweighted_alike_subsystems(self):
+        """Test a set of weighted disalike subsystems with a given subsystem count and fault category count,
+        with a weighted probability favoring a system with better design tolerances, complemented by weaker systems with more lax tolerances"""
+        rsi = RandomSystemImplementation(self.subsystems, self.fault_categories, [self.fdr], True)
+        res = rsi.collect_trials(self.trials, self.faults)
+        res['trial'] = "Unweighted_Alike"
+        return res
+
+    @staticmethod
+    def run_suite(subsystems: int, fault_categories: int, trials: int, faults: int, fdr: FaultDetectionRange, fdr_low: FaultDetectionRange, good_weight: float):
+        scn = Scenarios(trials, faults, fdr, fdr_low, subsystems, fault_categories)
+        ud = scn.unweighted_disalike_subsystems()
+        wd = scn.weighted_disalike_subsystems(good_weight)
+        ua = scn.unweighted_alike_subsystems()
+        total = pandas.concat([ud, wd, ua]).reset_index().drop('index', 1)
+        return total
+
+def analysis(results):
+    pass
+
 
 if __name__ == "__main__":
     random.seed(42)
-    rsi = RandomSystemImplementation(3, 5, [FaultDetectionRange((0.1, 0.3), (0.01, 0.05))] * 3, False)
-    res = rsi.collect_trials(100, 1)
+    scount = 3
+    res = Scenarios.run_suite(
+        subsystems=scount,
+        fault_categories=5,
+        trials=1000,
+        faults=1,
+        fdr = FaultDetectionRange((0.1, 0.3), (0.01, 0.05)),
+        fdr_low = FaultDetectionRange((0.3, 0.5), (0.01, 0.05)),
+        good_weight=((1 - 1/scount) + 0.05)
+    )
     print(res)
     #print(res.res_string())

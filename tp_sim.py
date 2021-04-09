@@ -1,9 +1,16 @@
+# N-Modular Software Voting System Simulation
+# Author: Allison Chilton <allison.chilton@colostate.edu>
+# run and tested with Python 3.9
+
 from termcolor import colored
+from dataclasses import dataclass
 import random
 import math
 import numpy as np
 from typing import Tuple, Dict, Union, List
 from enum import Enum
+import pandas
+import matplotlib.pyplot as plt
 
 class VoteResult(Enum):
     TRUE_NEGATIVE = 1
@@ -43,20 +50,45 @@ class VoteResult(Enum):
             outstr = colored(outstr, 'green' if self.is_correct() else 'red')
         return outstr
 
+@dataclass
+class FaultDetectionProbability:
+    miss: float
+    false_positive: float
+
+@dataclass
+class FaultDetectionRange:
+    miss_range: Tuple[float, float]
+    false_positive_range: Tuple[float, float]
+
+    def random_configuration(self) -> FaultDetectionProbability:
+        miss = random.uniform(self.miss_range[0], self.miss_range[1])
+        false_positive = random.uniform(self.false_positive_range[0], self.false_positive_range[1])
+        return FaultDetectionProbability(miss, false_positive)
+    
+
+
 class RandomSubsystemImplementation:
-    def __init__(self, fault_categories: int, miss_likelihood_range: Tuple[float, float]):
+    def __init__(self, fault_categories: int, likelihood_range: FaultDetectionRange):
         aint = ord('A')
         assert 0 < fault_categories <= 26
-        self.category_probs = {k: random.uniform(miss_likelihood_range[0], miss_likelihood_range[1]) for k in [chr(x) for x in range(aint,aint+fault_categories)]}
+        self.category_probs: Dict[str, FaultDetectionProbability] = {}
+        for k in [chr(x) for x in range(aint,aint+fault_categories)]:
+            self.category_probs[k] = likelihood_range.random_configuration()
     
     def vote(self, faults: Dict[str, bool], only_single_fault: bool = True) -> Dict[str, VoteResult]:
         retdict = {}
         single_fault_present = False # only allow one fault per vote
         for fault_type, is_present in faults.items():
             assert fault_type in self.category_probs, f"Unknown fault type category {fault_type}, subsystem only knows of {self.category_probs.keys()}"
-            px = random.uniform(0.0,1.0)
-            pw = self.category_probs[fault_type]
-            detect = px > (1 - pw if not is_present else pw)
+            px = random.uniform(0.0,1.0) # randomly roll whether to be higher or lower than the probability out of 100%
+            miss_prob = self.category_probs[fault_type].miss
+            fp_prob = self.category_probs[fault_type].false_positive
+            if is_present:
+                hit_prob = (1 - miss_prob) + fp_prob
+            else:
+                hit_prob = fp_prob
+
+            detect = px < hit_prob
             res = VoteResult.get_result(is_present, detect if not single_fault_present else is_present)
             if not res.is_correct():
                 single_fault_present = only_single_fault
@@ -67,7 +99,7 @@ class RandomSubsystemImplementation:
             
 
 class RandomSystemImplementation:
-    def __init__(self, subsystems: int, fault_categories: int, miss_likelihood_ranges: List[Tuple[float, float]], alike: bool, weights = None):
+    def __init__(self, subsystems: int, fault_categories: int, miss_likelihood_ranges: List[FaultDetectionRange], alike: bool, weights = None):
         self.weights = weights if weights is not None else [1] * subsystems
         if not alike:
             self.subsystems = [RandomSubsystemImplementation(fault_categories, miss_likelihood_ranges[i]) for i in range(subsystems)]
@@ -88,17 +120,29 @@ class RandomSystemImplementation:
         return majority_vote, votes
 
 
-    def run_trial(self, fc: Dict[str, bool]):
+    def run_trial(self, fc: Dict[str, bool]) -> VoteResult:
         fault_present = True in fc.values()
         fault_detected = rsi.vote(fc)[0]
         result = VoteResult.get_result(fault_present, fault_detected)
         return result
 
+def get_fc(fault_categories: int, faults: int) -> Dict[str, bool]:
+        aint = ord('A')
+        assert 0 < fault_categories <= 26
+        category_probs = {k: False for k in [chr(x) for x in range(aint,aint+fault_categories)]}
+        while True:
+            faultless_keys = [k for k,v in category_probs.items() if v == False]
+            if fault_categories - len(faultless_keys) == faults or len(faultless_keys) == 0:
+                break
+            rk = random.choice(faultless_keys)
+            category_probs[rk] = True
+        return category_probs
+
 
 if __name__ == "__main__":
     random.seed(42)
-    rsi = RandomSystemImplementation(3, 5, [(0.5, 0.5)] * 3, False)
+    rsi = RandomSystemImplementation(3, 5, [FaultDetectionRange((0.1, 0.3), (0.01, 0.05))] * 3, False)
     for i in range(100):
-        fc = {'A': False, 'B': False, 'C' : True, 'D': False, 'E': False}
+        fc = get_fc(5, 0)
         res = rsi.run_trial(fc)
         print(res.res_string())

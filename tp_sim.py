@@ -2,10 +2,12 @@
 # Author: Allison Chilton <allison.chilton@colostate.edu>
 # run and tested with Python 3.9
 
+from pandas.core.frame import DataFrame
 from termcolor import colored
 from dataclasses import dataclass
 import random
 import math
+import scipy.stats
 import numpy as np
 from typing import Tuple, Dict, Union, List
 from enum import Enum
@@ -158,31 +160,41 @@ class Scenarios:
         self.fdr_low = fdr_low
         self.subsystems = subsystems
         self.fault_categories = fault_categories
+    
+    def _rsi_run(self, rsi_args, name):
+        df = pandas.DataFrame()
+        idx = 0
+        while len(df) < self.trials:
+            results = [df]
+            rsi_obj = RandomSystemImplementation(*rsi_args)
+            res = rsi_obj.collect_trials(20, self.faults)
+            res['rsi_idx'] = idx
+            results.append(res)
+            df = pandas.concat(results)
+            idx += 1
+        
+        df['trial_name'] = name
+        return df
+
 
     def unweighted_disalike_subsystems(self):
         """Test a set of equally weighted disalike subsystems with a given subsystem count and fault category count"""
-        rsi = RandomSystemImplementation(self.subsystems, self.fault_categories, [self.fdr] * self.subsystems, False)
-        res = rsi.collect_trials(self.trials, self.faults)
-        res['trial'] = "Unweighted_Disalike"
-        return res
+        rsi = (self.subsystems, self.fault_categories, [self.fdr] * self.subsystems, False)
+        return self._rsi_run(rsi, "Unweighted_Disalike")
 
     def weighted_disalike_subsystems(self, good_weight: float):
         """Test a set of weighted disalike subsystems with a given subsystem count and fault category count,
         with a weighted probability favoring a system with better design tolerances, complemented by weaker systems with more lax tolerances"""
         other_weights = (1-good_weight) / (self.subsystems - 1)
         weights = [good_weight] + [other_weights] * (self.subsystems - 1)
-        rsi = RandomSystemImplementation(self.subsystems, self.fault_categories, [self.fdr] * self.subsystems, False, weights)
-        res = rsi.collect_trials(self.trials, self.faults)
-        res['trial'] = "Weighted_Disalike"
-        return res
+        rsi = (self.subsystems, self.fault_categories, [self.fdr] * self.subsystems, False, weights)
+        return self._rsi_run(rsi, "Weighted_Disalike")
 
     def unweighted_alike_subsystems(self):
         """Test a set of weighted disalike subsystems with a given subsystem count and fault category count,
         with a weighted probability favoring a system with better design tolerances, complemented by weaker systems with more lax tolerances"""
-        rsi = RandomSystemImplementation(self.subsystems, self.fault_categories, [self.fdr], True)
-        res = rsi.collect_trials(self.trials, self.faults)
-        res['trial'] = "Unweighted_Alike"
-        return res
+        rsi = (self.subsystems, self.fault_categories, [self.fdr], True)
+        return self._rsi_run(rsi, "Unweighted_Alike")
 
     @staticmethod
     def run_suite(subsystems: int, fault_categories: int, trials: int, faults: int, fdr: FaultDetectionRange, fdr_low: FaultDetectionRange, good_weight: float):
@@ -190,24 +202,71 @@ class Scenarios:
         ud = scn.unweighted_disalike_subsystems()
         wd = scn.weighted_disalike_subsystems(good_weight)
         ua = scn.unweighted_alike_subsystems()
-        total = pandas.concat([ud, wd, ua]).reset_index().drop('index', 1)
+        total = pandas.concat([ud, wd, ua]).reset_index().rename({'index': 'trial_iteration'}, axis=1)
         return total
 
-def analysis(results):
-    pass
+def ftest(p1, p2):
+    v1 = np.var(p1)
+    v2 = np.var(p2)
+    f = v1 / v2
+    dfn = p1.size - 1
+    dfd = p2.size - 1
+    p = 1-scipy.stats.f.cdf(f, dfn, dfd)
+    return f, p
+
+
+def analysis(results: DataFrame):
+    df = results.drop(['trial_iteration', 'rsi_idx'], 1)
+    # print(results.groupby("trial_name").std()
+    uniq_names = df['trial_name'].nunique()
+    tests_per_name = len(df) / uniq_names
+    cor_df = df[df['correct'] == True].groupby('trial_name')['correct']
+    pct_correct_by_type = cor_df.value_counts() / tests_per_name * 100
+    std_dev_by_type = df.groupby('trial_name')['correct'].std()
+
+    # f-test
+    unw_d = df[df['trial_name'] == "Unweighted_Disalike"]['correct']
+    p1 = unw_d.to_numpy()
+    for name in df['trial_name'].unique():
+        if name == "Unweighted_Disalike":
+            continue
+        other_df = df[df['trial_name'] == name]['correct']
+        p2 = other_df.to_numpy()
+        f, p = ftest(p1, p2)
+        print(f"{name} Vs Unweighted_Disalike F-test: F:{f} - P: {p}")
+
+
+    print(pct_correct_by_type)
+    print(std_dev_by_type)
+    
 
 
 if __name__ == "__main__":
     random.seed(42)
     scount = 3
-    res = Scenarios.run_suite(
+    trials = 1000
+    cats = 5
+    fdr =FaultDetectionRange((0.0, 0.3), (0.01, 0.05))
+    fdrl = FaultDetectionRange((0.3, 0.5), (0.01, 0.05))
+    gw = ((1 - 1/scount) + 0.05)
+    one_fault = Scenarios.run_suite(
         subsystems=scount,
-        fault_categories=5,
-        trials=1000,
+        fault_categories=cats,
+        trials=trials,
         faults=1,
-        fdr = FaultDetectionRange((0.1, 0.3), (0.01, 0.05)),
-        fdr_low = FaultDetectionRange((0.3, 0.5), (0.01, 0.05)),
-        good_weight=((1 - 1/scount) + 0.05)
+        fdr = fdr,
+        fdr_low = fdrl,
+        good_weight= gw
     )
-    print(res)
-    #print(res.res_string())
+
+    no_fault = Scenarios.run_suite(
+        subsystems=scount,
+        fault_categories=cats,
+        trials=trials,
+        faults=0,
+        fdr = fdr,
+        fdr_low = fdrl,
+        good_weight= gw
+    )
+
+    analysis(pandas.concat([one_fault, no_fault]))

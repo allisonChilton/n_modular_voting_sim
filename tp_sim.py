@@ -217,12 +217,13 @@ def ftest(p1, p2):
 
 def analysis(results: DataFrame):
     df = results.drop(['trial_iteration', 'rsi_idx'], 1)
-    # print(results.groupby("trial_name").std()
     uniq_names = df['trial_name'].nunique()
     tests_per_name = len(df) / uniq_names
     cor_df = df[df['correct'] == True].groupby('trial_name')['correct']
     pct_correct_by_type = cor_df.value_counts() / tests_per_name * 100
     std_dev_by_type = df.groupby('trial_name')['correct'].std()
+    adf = pct_correct_by_type.to_frame().join(std_dev_by_type, on='trial_name', lsuffix="_percent", rsuffix="_stddev").reset_index().drop('correct', 1).set_index('trial_name')
+    adf['p-value'] = pandas.NA
 
     # f-test
     unw_d = df[df['trial_name'] == "Unweighted_Disalike"]['correct']
@@ -233,16 +234,15 @@ def analysis(results: DataFrame):
         other_df = df[df['trial_name'] == name]['correct']
         p2 = other_df.to_numpy()
         f, p = ftest(p1, p2)
-        print(f"{name} Vs Unweighted_Disalike F-test: F:{f} - P: {p}")
+        adf.at[name, 'p-value'] = p
 
 
-    print(pct_correct_by_type)
-    print(std_dev_by_type)
+    return adf
     
 
 
 if __name__ == "__main__":
-    random.seed(42)
+    # random.seed(42)
     scount = 3
     trials = 1000
     cats = 5
@@ -269,4 +269,5 @@ if __name__ == "__main__":
         good_weight= gw
     )
 
-    analysis(pandas.concat([one_fault, no_fault]))
+    adf = analysis(pandas.concat([one_fault, no_fault]))
+    print(adf)

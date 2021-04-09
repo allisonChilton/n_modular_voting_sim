@@ -25,9 +25,23 @@ class VoteResult(Enum):
         elif is_present and not is_detected:
             res = VoteResult.FALSE_NEGATIVE
         return res
+    
+    @property
+    def fault_present(self):
+        return self == VoteResult.TRUE_POSITIVE or self == VoteResult.FALSE_NEGATIVE
+
+    @property
+    def fault_detected(self):
+        return self == VoteResult.TRUE_POSITIVE or self == VoteResult.FALSE_POSITIVE
 
     def is_correct(self)->bool:
         return (self == VoteResult.TRUE_NEGATIVE or self == VoteResult.TRUE_POSITIVE)
+
+    def res_string(self, colored_output=True):
+        outstr = f"{i}: Fault {'' if self.fault_present else 'not '}present and {'' if self.fault_detected else 'not '}detected"
+        if colored_output:
+            outstr = colored(outstr, 'green' if self.is_correct() else 'red')
+        return outstr
 
 class RandomSubsystemImplementation:
     def __init__(self, fault_categories: int, miss_likelihood_range: Tuple[float, float]):
@@ -74,12 +88,17 @@ class RandomSystemImplementation:
         return majority_vote, votes
 
 
+    def run_trial(self, fc: Dict[str, bool]):
+        fault_present = True in fc.values()
+        fault_detected = rsi.vote(fc)[0]
+        result = VoteResult.get_result(fault_present, fault_detected)
+        return result
+
+
 if __name__ == "__main__":
     random.seed(42)
     rsi = RandomSystemImplementation(3, 5, [(0.5, 0.5)] * 3, False)
     for i in range(100):
-        fc = {'A': False, 'B': False, 'C' : False, 'D': False, 'E': False}
-        fault_present = True in fc.values()
-        fault_detected = rsi.vote(fc)[0]
-        correct = VoteResult.get_result(fault_present, fault_detected).is_correct()
-        print(colored(f"{i}: Fault {'' if fault_present else 'not '}present and {'' if fault_detected else 'not '}detected", 'green' if correct else 'red'))
+        fc = {'A': False, 'B': False, 'C' : True, 'D': False, 'E': False}
+        res = rsi.run_trial(fc)
+        print(res.res_string())

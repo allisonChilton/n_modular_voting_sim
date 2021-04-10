@@ -12,6 +12,7 @@ import numpy as np
 from typing import Tuple, Dict, Union, List
 from enum import Enum
 import pandas
+import os
 import matplotlib.pyplot as plt
 
 class VoteResult(Enum):
@@ -242,9 +243,9 @@ def analysis(results: DataFrame):
 
 
 if __name__ == "__main__":
-    # random.seed(42)
+    random.seed(42)
     scount = 3
-    trials = 1000
+    trials = 8000
     cats = 5
     fdr =FaultDetectionRange((0.0, 0.3), (0.01, 0.05))
     fdrl = FaultDetectionRange((0.3, 0.5), (0.01, 0.05))
@@ -270,4 +271,10 @@ if __name__ == "__main__":
     )
 
     adf = analysis(pandas.concat([one_fault, no_fault]))
-    print(adf)
+    os.makedirs('images', exist_ok=True)
+    with open('fig1.tex', 'w') as latex_output:
+        latex_output.write(r"\begin{figure}\caption{Results}")
+        latex_output.write(adf.to_latex().replace("<NA>", "NA"))
+        latex_output.write(f"Parameters: Trials = {trials}, Subsystems = {scount}, Fault Categories = {cats}, Good Weight = {gw:.2f}, Fault Miss Probability Range = {fdr.miss_range}")
+        latex_output.write(f"False Positive Probability Range = {fdr.false_positive_range}, Worse Tolerance Miss and False Positive Probability Range = {(fdrl.miss_range, fdrl.false_positive_range)}\n")
+        latex_output.write(r"\end{figure}")

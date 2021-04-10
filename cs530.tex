@@ -6,6 +6,8 @@
 \usepackage[]{algorithm2e}
 \usepackage{booktabs}
 \usepackage{hyperref}
+\usepackage{graphicx}
+\graphicspath{{./images/}}
 
 
 \begin{document}
@@ -92,16 +94,8 @@ To gain some insight to the performance of these schemes, I wrote some random mo
 \section{Results}
 In order to avoid sample bias, I needed to randomly generate several different situations. However, this causes the random distribution to cancel out its discrepant outliers, likely making differentiating the merit of either approach more difficult when testing the average performance. A better metric is to measure the variance and/or standard deviation of all performances in the distribution to determine the probability of being off nominal given a randomly “manufactured” device.
 
-\begin{tabular}{lrrl}
-\toprule
-{} &  correct\_percent &  correct\_stddev &   p-value \\
-trial\_name          &                  &                 &           \\
-\midrule
-Unweighted\_Alike    &             95.4 &        0.209537 &   0.32374 \\
-Unweighted\_Disalike &             95.3 &        0.211692 &      NA \\
-Weighted\_Disalike   &             95.6 &        0.205146 &  0.080168 \\
-\bottomrule
-\end{tabular}
+
+\input{fig1.tex}
 
 \section{Other works}
 \section{Conclusion and Future Work}

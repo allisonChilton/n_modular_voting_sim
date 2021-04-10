@@ -243,7 +243,7 @@ def analysis(results: DataFrame):
     return adf
     
 
-smoke_test = False
+smoke_test = True
 
 def gen_table():
     scount = 3
@@ -274,10 +274,42 @@ def gen_table():
 
     comb_df = pandas.concat([one_fault, no_fault])
     adf = analysis(comb_df)
+
+    # confusion matrix
     cm = pandas.DataFrame(comb_df['result'].value_counts().to_numpy().reshape(2,2), index=['TRUE','FALSE'], columns=['POSITIVE','NEGATIVE'])
     print(cm)
     hm = seaborn.heatmap(cm, annot=True, linewidths=0.2, fmt="5d", linecolor='gray').get_figure()
     hm.savefig("./images/cm.png")
+
+    # prob dist
+    stddevs = adf['correct_stddev'].to_numpy()
+    pc = adf['correct_percent'].to_numpy()
+    x = np.linspace(93,98,1000)
+    x2 = np.linspace(-1, 1, 1000)
+    pdfs = []
+    pdfsn = []
+    for avg, sd in zip(pc, stddevs):
+        pdfs.append(scipy.stats.norm.pdf(x, loc=avg, scale=sd))
+        pdfsn.append(scipy.stats.norm.pdf(x2, loc=0, scale=sd))
+    
+    fig, ax = plt.subplots(1, 1)
+    for p, l in zip(pdfs, adf.index):
+        ax.plot(x, p, label=l)
+    ax.set_title("Probability Distribution of Different N-Module Configurations")
+    ax.set_ylabel("Probability")
+    ax.set_xlabel("Percent Correct")
+    ax.legend()
+    fig.savefig('./images/probdist.png')
+
+    fig, ax = plt.subplots(1, 1)
+    for p, l in zip(pdfsn, adf.index):
+        ax.plot(x2, p, label=l)
+    ax.set_title("Probability Distribution of Different N-Module Configurations Normalized")
+    ax.set_ylabel("Probability")
+    ax.set_xlabel("Normalized Percent Correct")
+    ax.legend()
+    fig.savefig('./images/probdistnorm.png')
+
     with open('fig1.tex', 'w') as latex_output:
         latex_output.write(r"\begin{figure}\caption{Results}")
         latex_output.write(adf.to_latex().replace("<NA>", "NA"))
@@ -365,9 +397,18 @@ def gen_plots(points=10):
             f.write(r"\begin{figure}\includegraphics[width=8cm]{")
             f.write(figp.with_suffix("").name)
             f.write(r"}\centering\end{figure}")
+        
+        #confusion matrix
+        f.write(r"\begin{figure}\includegraphics[width=8cm]{cm}\centering\end{figure}")
+
+        # pdf
+        f.write(r"\begin{figure}\includegraphics[width=8cm]{probdist}\centering\end{figure}")
+
+        # pdfn
+        f.write(r"\begin{figure}\includegraphics[width=8cm]{probdistnorm}\centering\end{figure}")
 
 
 if __name__ == "__main__":
     random.seed(42)
-    # gen_table()
+    gen_table()
     gen_plots()

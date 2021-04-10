@@ -61,7 +61,7 @@ The topic of N-Version fault-tolerant software schemes are well known in the lit
 
 \section{Literature Matrix}
 \section{Approach}
-To gain some insight to the performance of these schemes, I wrote some random monte carlo simulations that have voter subsystems that artificially model being designed and built using similar but not identical interpretations of requirements. They will have a randomly determined threshold to detect a particular domain of artificially inserted faults. There is also a parameter to test false positives. The idea is that in doing so, you are likely to average out the discrepancies in requirement interpretation and lead to more optimal performance. Additionally, I will write simulations that use identical detections of particular fault domains, as a basis of comparison.  Additionally, I would like to explore the effects of assigning weights to voter agents, in situations where a particular unit could be rigorously verified and tested, augmented by a higher quantity of lower quality backup devices. Finally, I’d like to analyze how this approach might be incompatible with other approaches, and the pro/cons of when it might be appropriate to use one approach or the other given your requirements. 
+To gain some insight to the performance of these schemes, I wrote some random monte carlo simulations that have voter subsystems that artificially model being designed and built using similar but not identical interpretations of requirements. They have a randomly determined threshold to detect a particular domain of artificially inserted faults. There is also a parameter to test false positives. The idea is that in doing so, you are likely to average out the discrepancies in requirement interpretation and lead to more optimal performance. Additionally, I wrote simulations that use identical detections of particular fault domains, as a basis of comparison.  Additionally, I explored the effects of assigning weights to voter agents, in situations where a particular unit could be rigorously verified and tested, augmented by a higher quantity of lower quality backup devices. Finally, we'll analyze how this approach might be incompatible with other approaches, and the pro/cons of when it might be appropriate to use one approach or the other given your requirements. 
 
 \begin{algorithm}
     \KwData{\newline
@@ -93,10 +93,17 @@ To gain some insight to the performance of these schemes, I wrote some random mo
 
 \section{Results}
 In order to avoid sample bias, I needed to randomly generate several different situations. However, this causes the random distribution to cancel out its discrepant outliers, likely making differentiating the merit of either approach more difficult when testing the average performance. A better metric is to measure the variance and/or standard deviation of all performances in the distribution to determine the probability of being off nominal given a randomly “manufactured” device.
+\par
+There are static results in a table that describe a nominal setup, as well as a variant set of setups that vary a particular field to observe how the different types of configurations adjust their various measurements - correct percentage, standard deviation, p-values - based on the variation of that particular field. The variances change the parameter to be -+50\% the nominal setup.
 
 
 \input{fig1.tex}
 \input{plots.tex}
+
+\textit{Insert more plots varying other things}
+
+\subsection{Discussion}
+\par You can see a trend in both the tables and plots. Our initial hypothesis was correct - in most cases the unweighted disalike (aka the N-Modular) system performed better than the alike. How you interpret performance here is subjective - if you look at the percent correct they are well within the margin of error and with more trials its likely the averaged out result would be even less pronounced. However, the variance / standard deviation of the population is the particular trend that we should observe. The standard deviation is almost always consistently lower by a not statistically insignifcant amount (as shown by the p-values in the table and plots). This confirms our initial conjecture: given any random system configuration, you are statistically more likely to be closer to the mean if you have an N-Modular system.
 
 \section{Other works}
 \section{Conclusion and Future Work}

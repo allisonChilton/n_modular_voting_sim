@@ -243,7 +243,7 @@ def analysis(results: DataFrame):
     return adf
     
 
-smoke_test = True
+smoke_test = False
 
 def gen_table():
     scount = 3

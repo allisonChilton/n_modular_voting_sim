@@ -12,7 +12,7 @@
 
 \begin{document}
 \title{Simulating and Surveying Fault Avoidance Efficacy of Majority Voting Systems with N-Version Software Systems}
-\author{Allison Chilton\\\texttt{ allison.chilton@colostate.edu}}
+\author{Allison Chilton\\\texttt{ allison.chilton@colostate.edu}\\CS530 - Yashwant Malaiya}
 \date{April 2021}
 
 \maketitle
@@ -24,6 +24,8 @@ This survey compares majority voting schemes for alike and disalike voter subsys
 \textbf{Keywords: N-Version, Fault-Tolerant Software, Survey, Simulation}
 \end{abstract}
 
+
+\input{prog_rep.tex}
 
 \section{Introduction}
 \par
@@ -44,22 +46,84 @@ The topic of N-Version fault-tolerant software schemes are well known in the lit
 
 \subsection{Foundational Works}
 
-\subsubsection{Paper}
+
+\subsubsection{N-version programming: A fault-tolerance approach to reliability of software operation}
+\cite{chen1978n}
 \hfill\\
 \par
 \textbf{Summary:} 
 \par
 \textbf{Discussion:}
-\subsubsection{Paper}
+\subsubsection{The methodology of n-version programming}
+\cite{avizienis1995methodology}
 \hfill\\
 \par
 \textbf{Summary:} 
 \par
 \textbf{Discussion:}
+\subsubsection{N-Version Programming for the Detection of Zero-day Exploits}
+\cite{zerodayexp}
+\hfill\\
+\par
+\textbf{Summary:} 
+\par
+\textbf{Discussion:}
+
+\subsubsection{An experimental evaluation of the assumption of independence in multiversion programming}
+\cite{knightetal}
+\hfill\\
+\par
+\textbf{Summary:} 
+\par
+\textbf{Discussion:}
+\par
+\textbf{Follow Up:} 
+\cite{kfollowup}
+
+
+
 \subsection{Current Literature}
+\subsubsection{New Wine in an Old Bottle: N-Version Programming for Machine Learning Components}
+\cite{newwine}
+\hfill\\
+\par
+\textbf{Summary:} 
+\par
+\textbf{Discussion:}
 
+\subsubsection{N-version programming approach with implicit safety guarantee for complex dynamic system stabilization applications}
+\cite{nadiretal}
+\hfill\\
+\par
+\textbf{Summary:} 
+\par
+\textbf{Discussion:}
 
-\section{Literature Matrix}
+\subsubsection{Model Fusion: Weighted N-Version Programming for Resilient Autonomous Vehicle Steering Control}
+\cite{wuetal}
+\hfill\\
+\par
+\textbf{Summary:} 
+\par
+\textbf{Discussion:}
+
+\subsubsection{N-version machine learning models for safety critical systems}
+\cite{machida2019n}
+\hfill\\
+\par
+\textbf{Summary:} 
+\par
+\textbf{Discussion:}
+
+\subsubsection{Application of majority voting and consensus voting algorithms in N-version software}
+\cite{Tsarev_2018}
+\hfill\\
+\par
+\textbf{Summary:} 
+\par
+\textbf{Discussion:}
+
+%\section{Literature Matrix}
 \section{Approach}
 To gain some insight to the performance of these schemes, I wrote some random monte carlo simulations that have voter subsystems that artificially model being designed and built using similar but not identical interpretations of requirements. They have a randomly determined threshold to detect a particular domain of artificially inserted faults. There is also a parameter to test false positives. The idea is that in doing so, you are likely to average out the discrepancies in requirement interpretation and lead to more optimal performance. Additionally, I wrote simulations that use identical detections of particular fault domains, as a basis of comparison.  Additionally, I explored the effects of assigning weights to voter agents, in situations where a particular unit could be rigorously verified and tested, augmented by a higher quantity of lower quality backup devices. Finally, we'll analyze how this approach might be incompatible with other approaches, and the pro/cons of when it might be appropriate to use one approach or the other given your requirements. 
 
@@ -107,17 +171,112 @@ There are static results in a table that describe a nominal setup, as well as a 
 
 \section{Other works}
 \section{Conclusion and Future Work}
-\section{References}
 
 \begin{filecontents}[overwrite]{cs530bib.bib}
+  @inproceedings{chen1978n,
+  title={N-version programming: A fault-tolerance approach to reliability of software operation},
+  author={Chen, Liming and Avizienis, Algirdas},
+  booktitle={Proc. 8th IEEE Int. Symp. on Fault-Tolerant Computing (FTCS-8)},
+  volume={1},
+  pages={3--9},
+  year={1978}
+}
 
+@article{avizienis1995methodology,
+  title={The methodology of n-version programming},
+  author={Avizienis, Algirdas},
+  journal={Software fault tolerance},
+  volume={3},
+  pages={23--46},
+  year={1995},
+  publisher={John Wiley \& Sons, New York}
+}
+
+@article{zerodayexp,
+author = {Nagy, Lajos and Ford, Richard and Allen, William},
+year = {2006},
+month = {01},
+pages = {},
+title = {N-Version Programming for the Detection of Zero-day Exploits}
+}
+
+@ARTICLE{knightetal,
+  author={J. C. {Knight} and N. G. {Leveson}},  
+journal={IEEE Transactions on Software Engineering},
+   title={An experimental evaluation of the assumption of independence in multiversion programming},
+      year={1986},  volume={SE-12},  number={1},  pages={96-109},  doi={10.1109/TSE.1986.6312924}
+      }
+ 
+@article{kfollowup,
+author = {Knight, John C. and Leveson, Nancy G.},
+title = {A Reply to the Criticisms of the Knight and Leveson Experiment},
+year = {1990},
+issue_date = {Jan 1990},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {15},
+number = {1},
+issn = {0163-5948},
+url = {https://doi.org/10.1145/382294.382710},
+doi = {10.1145/382294.382710},
+journal = {SIGSOFT Softw. Eng. Notes},
+pages = {24–35},
+}
+
+@INPROCEEDINGS{newwine,  author={A. {Gujarati} and S. {Gopalakrishnan} and K. {Pattabiraman}},  booktitle={2020 IEEE International Symposium on Software Reliability Engineering Workshops (ISSREW)},   title={New Wine in an Old Bottle: N-Version Programming for Machine Learning Components},   year={2020},  volume={},  number={},  pages={283-286},  doi={10.1109/ISSREW51248.2020.00086}}
+
+@article{nadiretal,
+author = {Nadir Subasi and Ufuk Guner and Ilker Ustoglu},
+title ={N-version programming approach with implicit safety guarantee for complex dynamic system stabilization applications},
+journal = {Measurement and Control},
+volume = {0},
+number = {0},
+pages = {0020294019887473},
+year = {0},
+doi = {10.1177/0020294019887473},
+
+URL = { 
+        https://doi.org/10.1177/0020294019887473
+    
+},
+eprint = { 
+        https://doi.org/10.1177/0020294019887473
+    
+}
+}
+
+@INPROCEEDINGS{wuetal,  author={A. {Wu} and A. H. M. {Rubaiyat} and C. {Anton} and H. {Alemzadeh}},  booktitle={2018 IEEE International Symposium on Software Reliability Engineering Workshops (ISSREW)},   title={Model Fusion: Weighted N-Version Programming for Resilient Autonomous Vehicle Steering Control},   year={2018},  volume={},  number={},  pages={144-145},  doi={10.1109/ISSREW.2018.00-11}}
+
+@inproceedings{machida2019n,
+  title={N-version machine learning models for safety critical systems},
+  author={Machida, Fumio},
+  booktitle={2019 49th Annual IEEE/IFIP International Conference on Dependable Systems and Networks Workshops (DSN-W)},
+  pages={48--51},
+  year={2019},
+  organization={IEEE}
+}
+
+@article{Tsarev_2018,
+	doi = {10.1088/1742-6596/1015/4/042059},
+	url = {https://doi.org/10.1088/1742-6596/1015/4/042059},
+	year = 2018,
+	month = {may},
+	publisher = {{IOP} Publishing},
+	volume = {1015},
+	pages = {042059},
+	author = {R Yu Tsarev and M S Durmu{\c{s}} and I Üstoglu and V A Morozov},
+	title = {Application of majority voting and consensus voting algorithms in N-version software},
+	journal = {Journal of Physics: Conference Series}
+}
 
 \end{filecontents}
-\bibliographystyle{unsrt}
-%\bibliography{cs530bib}
+
 \appendix
 \section{Source Code}
 Full source for simulation available at \url{ https://github.com/allisonChilton/n_modular_voting_sim/blob/master/tp_sim.py}
+
+\bibliographystyle{unsrt}
+\bibliography{cs530bib}
 
 \end{document}
 

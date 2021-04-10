@@ -7,6 +7,7 @@ from termcolor import colored
 from dataclasses import dataclass
 import random
 import math
+import seaborn
 import scipy.stats
 import numpy as np
 from typing import Tuple, Dict, Union, List
@@ -241,11 +242,11 @@ def analysis(results: DataFrame):
     return adf
     
 
+smoke_test = True
 
-if __name__ == "__main__":
-    random.seed(42)
+def gen_table():
     scount = 3
-    trials = 8000
+    trials = 8000 if not smoke_test else 100
     cats = 5
     fdr =FaultDetectionRange((0.0, 0.3), (0.01, 0.05))
     fdrl = FaultDetectionRange((0.3, 0.5), (0.01, 0.05))
@@ -270,11 +271,52 @@ if __name__ == "__main__":
         good_weight= gw
     )
 
-    adf = analysis(pandas.concat([one_fault, no_fault]))
-    os.makedirs('images', exist_ok=True)
+    comb_df = pandas.concat([one_fault, no_fault])
+    adf = analysis(comb_df)
+    cm = pandas.DataFrame(comb_df['result'].value_counts().to_numpy().reshape(2,2), index=['TRUE','FALSE'], columns=['POSITIVE','NEGATIVE'])
+    print(cm)
+    hm = seaborn.heatmap(cm, annot=True, linewidths=0.2, fmt="5d", linecolor='gray').get_figure()
+    hm.savefig("./images/cm.png")
     with open('fig1.tex', 'w') as latex_output:
         latex_output.write(r"\begin{figure}\caption{Results}")
         latex_output.write(adf.to_latex().replace("<NA>", "NA"))
         latex_output.write(f"Parameters: Trials = {trials}, Subsystems = {scount}, Fault Categories = {cats}, Good Weight = {gw:.2f}, Fault Miss Probability Range = {fdr.miss_range}")
         latex_output.write(f"False Positive Probability Range = {fdr.false_positive_range}, Worse Tolerance Miss and False Positive Probability Range = {(fdrl.miss_range, fdrl.false_positive_range)}\n")
         latex_output.write(r"\end{figure}")
+
+def gen_plots(points=10):
+    os.makedirs('images', exist_ok=True)
+    scount = 3
+    trials = 8000 if not smoke_test else 100
+    cats = 5
+    fdr =FaultDetectionRange((0.0, 0.3), (0.01, 0.05))
+    fdrl = FaultDetectionRange((0.3, 0.5), (0.01, 0.05))
+    gw = ((1 - 1/scount) + 0.05)
+    dfs = []
+    for i in range(int(trials / points)):
+        one_fault = Scenarios.run_suite(
+            subsystems=scount,
+            fault_categories=cats,
+            trials=trials,
+            faults=1,
+            fdr = fdr,
+            fdr_low = fdrl,
+            good_weight= gw
+        )
+
+        no_fault = Scenarios.run_suite(
+            subsystems=scount,
+            fault_categories=cats,
+            trials=trials,
+            faults=0,
+            fdr = fdr,
+            fdr_low = fdrl,
+            good_weight= gw
+        )
+
+        dfs.append(analysis(pandas.concat([one_fault, no_fault])))
+
+if __name__ == "__main__":
+    random.seed(42)
+    gen_table()
+    gen_plots()

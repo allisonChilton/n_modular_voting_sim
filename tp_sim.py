@@ -3,6 +3,7 @@
 # run and tested with Python 3.9
 
 from pandas.core.frame import DataFrame
+from pathlib import Path
 from termcolor import colored
 from dataclasses import dataclass
 import random
@@ -242,7 +243,7 @@ def analysis(results: DataFrame):
     return adf
     
 
-smoke_test = True
+smoke_test = False
 
 def gen_table():
     scount = 3
@@ -293,13 +294,20 @@ def gen_plots(points=10):
     fdrl = FaultDetectionRange((0.3, 0.5), (0.01, 0.05))
     gw = ((1 - 1/scount) + 0.05)
     dfs = []
-    for i in range(int(trials / points)):
+
+    # vary fdr
+    bmr = fdr.miss_range[1] * 0.5
+    hmr = fdr.miss_range[1] * 1.5
+    mra = np.linspace(bmr, hmr, points)
+    subtrials = int(trials / points)
+    for mr in mra:
+        fdrn = FaultDetectionRange((0.0, mr), fdr.false_positive_range)
         one_fault = Scenarios.run_suite(
             subsystems=scount,
             fault_categories=cats,
-            trials=trials,
+            trials=subtrials,
             faults=1,
-            fdr = fdr,
+            fdr = fdrn,
             fdr_low = fdrl,
             good_weight= gw
         )
@@ -307,16 +315,59 @@ def gen_plots(points=10):
         no_fault = Scenarios.run_suite(
             subsystems=scount,
             fault_categories=cats,
-            trials=trials,
+            trials=subtrials,
             faults=0,
-            fdr = fdr,
+            fdr = fdrn,
             fdr_low = fdrl,
             good_weight= gw
         )
 
         dfs.append(analysis(pandas.concat([one_fault, no_fault])))
 
+    correct_data = []
+    std_devs = []
+    ps = []
+    for mr, df in zip(mra, dfs):
+        cpdf = df['correct_percent'].to_frame().rename({'correct_percent': mr}, axis=1)
+        sddf = df['correct_stddev'].to_frame().rename({'correct_stddev': mr}, axis=1)
+        pdf = df['p-value'].to_frame().rename({'p-value': mr}, axis=1)
+        correct_data.append(cpdf)
+        std_devs.append(sddf)
+        ps.append(pdf)
+    
+    fig_paths = ['./images/percent_correct_fdr.png', './images/stddev_fdr.png', './images/pvalue_fdr.png']
+    cpdf = pandas.concat(correct_data, axis=1).T
+    ax = cpdf.plot()
+    ax.set_title("Percent correct by varying fault miss probability")
+    ax.set_xlabel("Maximum Fault Miss Probability")
+    ax.set_ylabel("Percent correct")
+    fig = ax.figure
+    fig.savefig(fig_paths[0])
+
+    sddf = pandas.concat(std_devs, axis=1).T
+    ax = sddf.plot()
+    ax.set_title("Std Dev by varying fault miss probability")
+    ax.set_xlabel("Maximum Fault Miss Probability")
+    ax.set_ylabel("Standard Deviation")
+    fig = ax.figure
+    fig.savefig(fig_paths[1])
+
+    pdf = pandas.concat(ps, axis=1).T.drop('Unweighted_Disalike', 1)
+    ax = pdf.plot()
+    ax.set_title("P-Value (compared to unweighted disalike) by varying fault miss probability")
+    ax.set_xlabel("Maximum Fault Miss Probability")
+    ax.set_ylabel("P-Value")
+    fig = ax.figure
+    fig.savefig(fig_paths[2])
+
+    with open('plots.tex', 'w') as f:
+        for figp in [Path(x) for x in fig_paths]:
+            f.write(r"\begin{figure}\includegraphics[width=8cm]{")
+            f.write(figp.with_suffix("").name)
+            f.write(r"}\centering\end{figure}")
+
+
 if __name__ == "__main__":
     random.seed(42)
-    gen_table()
+    # gen_table()
     gen_plots()

@@ -190,7 +190,8 @@ class Scenarios:
         with a weighted probability favoring a system with better design tolerances, complemented by weaker systems with more lax tolerances"""
         other_weights = (1-good_weight) / (self.subsystems - 1)
         weights = [good_weight] + [other_weights] * (self.subsystems - 1)
-        rsi = (self.subsystems, self.fault_categories, [self.fdr] * self.subsystems, False, weights)
+        detect_ranges = [self.fdr] + [self.fdr_low] * (self.subsystems - 1)
+        rsi = (self.subsystems, self.fault_categories, detect_ranges, False, weights)
         return self._rsi_run(rsi, "Weighted_Disalike")
 
     def unweighted_alike_subsystems(self):
@@ -199,13 +200,19 @@ class Scenarios:
         rsi = (self.subsystems, self.fault_categories, [self.fdr], True)
         return self._rsi_run(rsi, "Unweighted_Alike")
 
+    def control(self):
+        """Test a single system"""
+        rsi = (1, self.fault_categories, [self.fdr], True)
+        return self._rsi_run(rsi, "1-Version System")
+
     @staticmethod
     def run_suite(subsystems: int, fault_categories: int, trials: int, faults: int, fdr: FaultDetectionRange, fdr_low: FaultDetectionRange, good_weight: float):
         scn = Scenarios(trials, faults, fdr, fdr_low, subsystems, fault_categories)
         ud = scn.unweighted_disalike_subsystems()
         wd = scn.weighted_disalike_subsystems(good_weight)
         ua = scn.unweighted_alike_subsystems()
-        total = pandas.concat([ud, wd, ua]).reset_index().rename({'index': 'trial_iteration'}, axis=1)
+        co = scn.control()
+        total = pandas.concat([ud, wd, ua, co]).reset_index().rename({'index': 'trial_iteration'}, axis=1)
         return total
 
 def ftest(p1, p2):
@@ -284,7 +291,8 @@ def gen_table():
     # prob dist
     stddevs = adf['correct_stddev'].to_numpy()
     pc = adf['correct_percent'].to_numpy()
-    x = np.linspace(93,98,1000)
+    pcam = np.argmin(pc)
+    x = np.linspace(pc[pcam] - 3*stddevs[pcam],98,1000)
     x2 = np.linspace(-1, 1, 1000)
     pdfs = []
     pdfsn = []

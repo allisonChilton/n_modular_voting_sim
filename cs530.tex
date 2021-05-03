@@ -25,59 +25,49 @@ This survey compares majority voting schemes for alike and disalike voter subsys
 \end{abstract}
 
 
-\input{prog_rep.tex}
 
 \section{Introduction}
 \par
 Often majority voter schemes (such as TMR) are proposed to address faults within a system where the system design is assumed to be correct but environmental and mechanical faults are inevitable. Because of this, very often the voting mechanisms use identical subsystems to perform as voting agents. Further, in many formulations, it is considered a requirement that such agents be identical for the correctness of the algorithm. This does not protect against system design flaws and human error when defining requirements. This will explore using intentionally disalike subsystems with discrete outputs and voting cycles, also known as N-Version fault-tolerant software systems, to measure performance of its fault avoidance success. 
 %Additionally, I would like to explore how following this paradigm might be incompatible with other approaches, such as the State Machine Replication of Byzantine fault avoidance. 
 \par
-The topic of N-Version fault-tolerant software schemes are well known in the literature. In brief, the fundamental idea is that a system that is designed independently by different teams, where each subsystem votes to form a consensus for a discretized time step, will show more fault-tolerance to design defects because teams will likely average out their misunderstandings of ambiguous or imperfect design requirements. There is disagreement about whether this is indeed effective, perhaps because people are likely to misinterpret something in the same wrong way. The author will review the state of the literature, contrast the arguments, and submit their own software simulation for various scenarios. 
+The topic of N-Version fault-tolerant software schemes are well known in the literature. In brief, the fundamental idea is that a system that is designed independently by different teams, where each subsystem votes to form a consensus for a discretized time step, will show more fault-tolerance to design defects because teams will likely average out their misunderstandings of ambiguous or imperfect design requirements. There is disagreement about whether this is indeed effective, perhaps because people are likely to misinterpret something in the same wrong way. 
+\par
+The primary contribution of this paper is to review the state of the literature, contrast the arguments, and submit the author's own software simulation for various scenarios. The author will cover the initial hypothesis that lead to this research, and analyze the results to see if that hypothesis was confirmed.
+\par
+The paper is laid out to introduce the reader to the concept, and to then review the literature for the field's current understanding. Following that, a methodology will be describes to provide a basic rationale for the author's hypothesis, and the simulation that was performed to confirm (or deny) that hypothesis. Finally, the paper will end with a conclusion and related works section.
 
 
 \section{Literature Review}
-% \subsection{Prework}
-% Although the foundational works set the stage for the first forays into academic research for this field, even those papers must build on well known bodies of literature on the behavior of networks and general cryptographic principles. Exploring all of these papers recursively would result in a survey hundreds of pages long. For the sake of brevity, these papers are all outside the scope of this survey. However, I will list a handful of referenced papers and background that the reader may wish to familiarize themselves to more adequately understand the results of this survey: 
-% \begin{outline}
-%     \1 
-%     \1 
-%     \1 
-% \end{outline}
 
 \subsection{Foundational Works}
 
 
-\subsubsection{N-version programming: A fault-tolerance approach to reliability of software operation}
-\cite{chen1978n}
-\hfill\\
-\par
-\textbf{Summary:} 
-\par
-\textbf{Discussion:}
-\subsubsection{The methodology of n-version programming}
-\cite{avizienis1995methodology}
-\hfill\\
-\par
-\textbf{Summary:} 
-\par
-\textbf{Discussion:}
-\subsubsection{N-Version Programming for the Detection of Zero-day Exploits}
-\cite{zerodayexp}
-\hfill\\
-\par
-\textbf{Summary:} 
-\par
-\textbf{Discussion:}
+\subsection{N-version programming: A fault-tolerance approach to reliability of software operation}
+% https://www.inf.pucrs.br/zorzo/cs/n-versionprogramming.pdf
+One of the first papers academically defining and quantifying N-Version programming.
+\\ 
+Makes argument that multiple element redundancy in hardware does not translate well to software, because usually software faults are from design or implementation flaws rather than physical properties. That is, with the same inputs, multiple copies of software provide no additional utility because they will produce the same wrong output. 
+\\ 
+Not suitable to say "just make it correct" because even with large amounts of effort it has been demonstrated to be exceedingly difficult to build perfect software without issue. 
+\\
+Authors argue that essentially, multiple different versions of the software working together to check in at regular intervals to majority vote decide some datum is the software equivalent of multiple hardware copies.
 
-\subsubsection{An experimental evaluation of the assumption of independence in multiversion programming}
+
+Authors methods and conclusions are sound. I think it is somewhat of a stretch to assert that N-Version software is the same as multiple redundant hardware. PCBs or other hardware could have the same flaws and produce the same wrong outputs in some electrical design, or some other equivalent physical similarity causing an incorrect output. Having multiple copies of those would yield the same problem as software. Therefore it is best to just quantify the kinds of errors as separate domains that both need to be addressed. First there are the kind of faults brought on by incorrect design or some implementation issue or mistake of the engineer, and then there are environmental faults which cause correct systems to operate incorrectly. What the authors should have instead stated, and perhaps empirically measured, is that hardware system faults are largely dominated by the environmental faults, whereas software systems are largely dominated by engineering faults. One could indeed build an N-Version voting system for electrical signals to prevent design faults, or one could run multiple copies of the same software on different devices which are susceptible to environmental faults (such as radiation upsets in spaceflight).
+\cite{chen1978n}
+\subsubsection{The methodology of n-version programming}
+% https://www.researchgate.net/profile/Algirdas-Avizienis-2/publication/200031514_The_Methodology_of_N-Version_Programming/links/00b49539a3cd7be0af000000/The-Methodology-of-N-Version-Programming.pdf
+Expanded the work done by UCLA team. 
+\\ 
+Interesting observation: detailing if an application has suitable "potential for diversity" in the specification. Over dictation of design requirements may yield worse results and is better suited for extensive single version verification and validation to formally prove correctness. % Avi88a Che90 Lyu92b
+
+\cite{avizienis1995methodology}
+\subsection{N-Version Programming for the Detection of Zero-day Exploits}
+\cite{zerodayexp}
+\subsection{An experimental evaluation of the assumption of independence in multiversion programming}
 \cite{knightetal}
-\hfill\\
-\par
-\textbf{Summary:} 
-\par
-\textbf{Discussion:}
-\par
-\textbf{Follow Up:} 
+\subsubsection{Follow Up:}
 \cite{kfollowup}
 
 
